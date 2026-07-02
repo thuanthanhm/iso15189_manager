@@ -1,0 +1,12 @@
+kích hoạt main.py
+uvicorn main:app --reload
+
+kích hoạt frontend
+npm run dev
+
+Vào folder
+cd frontend
+cd backend
+
+vào venv (môi trường ảo)
+.\venv\Scripts\activate
