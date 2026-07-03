@@ -20,7 +20,6 @@ const globalMenu = ref([
 ]);
 
 // --- 2. ĐỊNH TUYẾN NGỮ CẢNH ---
-// Kiểm tra an toàn `route.path` để tránh crash khi route chưa sẵn sàng
 const isDocumentModule = computed(() => route.path && route.path.startsWith('/documents'));
 const isDocumentDetail = computed(() => isDocumentModule.value && route.params.id != null);
 
@@ -81,7 +80,7 @@ const folderActionItems = computed(() => [
         label: 'Đổi tên thư mục',
         icon: 'pi pi-pencil',
         command: () => {
-            if (!selectedFolderKey.value) return; // Bảo vệ chống crash khi null
+            if (!selectedFolderKey.value) return; 
             const activeId = Object.keys(selectedFolderKey.value)[0];
             let currentName = 'Thư mục đang chọn';
             const findName = (nodes) => {
@@ -152,7 +151,7 @@ const navigateToDoc = (docId) => {
     router.push({ path: `/documents/${docId}`, query: { folder_id: route.query.folder_id } });
 };
 
-// --- 5. TRIGGER API AN TOÀN (Tuyệt đối không dùng Top-level await) ---
+// --- 5. TRIGGER API AN TOÀN ---
 watch(() => route.path, (newPath) => {
     if (newPath && newPath.startsWith('/documents') && folderTree.value.length === 0) {
         fetchFolders();
@@ -173,61 +172,65 @@ watch(() => route.query.folder_id, (newFolderId) => {
 </script>
 
 <template>
-    <div class="layout-sidebar-inner flex flex-column h-full w-full">
-        
-        <div v-if="!isDocumentModule" class="layout-menu-container flex-1 overflow-y-auto">
-            <app-menu :model="globalMenu" class="menu-with-guide-lines"></app-menu>
-        </div>
+    <div class="layout-sidebar">
 
-        <div v-else-if="isDocumentModule && !isDocumentDetail" class="module-sidebar-wrapper flex-1 flex flex-column min-h-0">
-            <div class="sidebar-meta-zone flex-shrink-0 p-3 pb-0">
-                <div class="flex justify-content-between align-items-center mb-3">
-                    <span class="font-bold text-primary text-xl white-space-nowrap">Kho & Thư mục</span>
-                    <Button icon="pi pi-folder-plus" class="p-button-rounded p-button-text p-button-sm flex-shrink-0" title="Tạo thư mục gốc" @click="openNewFolderDialog(false)" />
-                </div>
-                <div class="flex gap-2 mb-2" v-if="selectedFolderKey && Object.keys(selectedFolderKey).length > 0">
-                    <SplitButton label="Thêm thư mục con" icon="pi pi-plus" 
-                                 @click="openNewFolderDialog(true)" 
-                                 :model="folderActionItems" 
-                                 class="p-button-sm w-full p-button-outlined p-button-secondary custom-split-btn" />
-                </div>
-            </div>
+        <div class="flex flex-column h-full w-full min-h-0">
             
-            <div class="sidebar-tree-zone flex-1 overflow-y-auto px-2 pb-2">
-                <Tree :value="folderTree" selectionMode="single" 
-                      v-model:selectionKeys="selectedFolderKey" 
-                      @node-select="onNodeSelect" 
-                      class="border-none bg-transparent p-0 w-full custom-hierarchical-tree"
-                      placeholder="Chưa có cấu trúc" />
+            <div v-if="!isDocumentModule" class="layout-menu-container flex-1 overflow-y-auto">
+                <app-menu :model="globalMenu" class="menu-with-guide-lines"></app-menu>
             </div>
-        </div>
 
-        <div v-else-if="isDocumentDetail" class="contextual-sidebar flex-1 flex flex-column min-h-0">
-            <div class="flex-shrink-0 p-3 bg-surface-50 border-bottom-1 surface-border">
-                <span class="font-bold text-xs text-secondary text-uppercase tracking-wider block">
-                    <i class="pi pi-folder-open mr-2"></i>Tài liệu cùng danh mục
-                </span>
-            </div>
-            
-            <div class="flex-1 overflow-y-auto p-2">
-                <div v-if="isLoadingDocs" class="flex justify-content-center p-4 text-surface-500">
-                    <i class="pi pi-spin pi-spinner text-2xl"></i>
+            <div v-else-if="isDocumentModule && !isDocumentDetail" class="module-sidebar-wrapper flex-1 flex flex-column min-h-0">
+                <div class="sidebar-meta-zone flex-shrink-0 p-3 pb-0">
+                    <div class="flex justify-content-between align-items-center mb-3">
+                        <span class="font-bold text-primary text-xl white-space-nowrap">Kho & Thư mục</span>
+                        <Button icon="pi pi-folder-plus" class="p-button-rounded p-button-text p-button-sm flex-shrink-0" title="Tạo thư mục gốc" @click="openNewFolderDialog(false)" />
+                    </div>
+                    <div class="flex gap-2 mb-2" v-if="selectedFolderKey && Object.keys(selectedFolderKey).length > 0">
+                        <SplitButton label="Thêm thư mục con" icon="pi pi-plus" 
+                                     @click="openNewFolderDialog(true)" 
+                                     :model="folderActionItems" 
+                                     class="p-button-sm w-full p-button-outlined p-button-secondary custom-split-btn" />
+                    </div>
                 </div>
                 
-                <ul v-else class="layout-menu m-0 p-0 list-none">
-                    <li v-for="doc in contextualDocs" :key="doc.id" 
-                        :class="['layout-menuitem-root-text cursor-pointer p-2 border-round transition-colors transition-duration-150 mb-1 border-left-3', 
-                                 doc.id == route.params.id ? 'active-route bg-primary-50 text-primary border-primary' : 'border-transparent hover:bg-surface-100']"
-                        @click="navigateToDoc(doc.id)">
-                        <a class="flex flex-column gap-1 text-color no-underline w-full p-1">
-                            <span class="font-bold text-sm" :class="doc.id == route.params.id ? 'text-primary' : 'text-primary-600'">{{ doc.code }}</span>
-                            <span class="text-xs text-surface-700 font-medium line-clamp-custom" :title="doc.title">
-                                {{ doc.title }}
-                            </span>
-                        </a>
-                    </li>
-                </ul>
+                <div class="sidebar-tree-zone flex-1 overflow-y-auto px-2 pb-2">
+                    <Tree :value="folderTree" selectionMode="single" 
+                          v-model:selectionKeys="selectedFolderKey" 
+                          @node-select="onNodeSelect" 
+                          class="border-none bg-transparent p-0 w-full custom-hierarchical-tree"
+                          placeholder="Chưa có cấu trúc" />
+                </div>
             </div>
+
+            <div v-else-if="isDocumentDetail" class="contextual-sidebar flex-1 flex flex-column min-h-0">
+                <div class="flex-shrink-0 p-3 bg-surface-50 border-bottom-1 surface-border">
+                    <span class="font-bold text-xs text-secondary text-uppercase tracking-wider block">
+                        <i class="pi pi-folder-open mr-2"></i>Tài liệu cùng danh mục
+                    </span>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-2">
+                    <div v-if="isLoadingDocs" class="flex justify-content-center p-4 text-surface-500">
+                        <i class="pi pi-spin pi-spinner text-2xl"></i>
+                    </div>
+                    
+                    <ul v-else class="layout-menu m-0 p-0 list-none">
+                        <li v-for="doc in contextualDocs" :key="doc.id" 
+                            :class="['layout-menuitem-root-text cursor-pointer p-2 border-round transition-colors transition-duration-150 mb-1 border-left-3', 
+                                     doc.id == route.params.id ? 'active-route bg-primary-50 text-primary border-primary' : 'border-transparent hover:bg-surface-100']"
+                            @click="navigateToDoc(doc.id)">
+                            <a class="flex flex-column gap-1 text-color no-underline w-full p-1">
+                                <span class="font-bold text-sm" :class="doc.id == route.params.id ? 'text-primary' : 'text-primary-600'">{{ doc.code }}</span>
+                                <span class="text-xs text-surface-700 font-medium line-clamp-custom" :title="doc.title">
+                                    {{ doc.title }}
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
         </div>
 
     </div>
@@ -256,11 +259,6 @@ watch(() => route.query.folder_id, (newFolderId) => {
 </template>
 
 <style scoped>
-/* Kháng vỡ layout Flexbox (Blow-out) */
-.layout-sidebar-inner {
-    min-height: 0;
-}
-
 /* Đảm bảo custom split button dàn đủ 100% không gian */
 :deep(.custom-split-btn) {
     width: 100% !important;
